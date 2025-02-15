@@ -1,12 +1,11 @@
-﻿const { TeamsActivityHandler, MessageFactory } = require('botbuilder');
+const { TeamsActivityHandler, MessageFactory } = require('botbuilder');
 const { TableClient } = require('@azure/data-tables');
 const fetch = require('node-fetch');
 
-class ApprovalBot extends TeamsActivityHandler {
+class BTApprovalBot extends TeamsActivityHandler {
     constructor() {
         super();
         
-        // Initialize Table Storage client
         this.tableClient = null;
         this.initializeStorage().then(() => {
             console.log('Storage initialized successfully');
@@ -33,7 +32,7 @@ class ApprovalBot extends TeamsActivityHandler {
         console.log('Installation update activity:', context.activity);
         if (context.activity.action === 'add') {
             await this.addConversationReference(context.activity);
-            await context.sendActivity("Hi! I'm the approvals bot. I'll notify you of any approval requests.");
+            await context.sendActivity("Hi! I'm the BeyondTrust PRA approvals bot. I'll notify you of any approval requests.");
         }
     }
 
@@ -43,11 +42,7 @@ class ApprovalBot extends TeamsActivityHandler {
         if (context.activity.membersAdded && context.activity.membersAdded.length > 0) {
             for (let idx in context.activity.membersAdded) {
                 if (context.activity.membersAdded[idx].id === context.activity.recipient.id) {
-                    if (context.activity.conversation.conversationType === 'channel') {
-                        await context.sendActivity("Hi! I'm the approvals bot. I'll notify this channel of any approval requests.");
-                    } else {
-                        await context.sendActivity("Hi! I'm the approvals bot. I'll notify you of any approval requests.");
-                    }
+                    await context.sendActivity("Hi! I'm the BeyondTrust PRA approvals bot. I'll notify you of any approval requests.");
                 }
             }
         }
@@ -56,44 +51,37 @@ class ApprovalBot extends TeamsActivityHandler {
     }
 
     async onInvokeActivity(context) {
-        console.log('Invoke Activity Full Context:', JSON.stringify(context, null, 2));
+        console.log('Invoke Activity:', context.activity);
 
         if (context.activity.name === 'adaptiveCard/action') {
             const actionData = context.activity.value.action.data;
-            console.log('Action Data:', JSON.stringify(actionData, null, 2));
+            console.log('Action Data:', actionData);
             
             try {
                 const functionUrl = process.env.FUNCTIONAPP_URL;
                 const functionKey = process.env.FUNCTIONAPP_KEY;
 
-                // Log all input values received
-                console.log('Input Values:', context.activity.value);
-                console.log('User Context:', context.activity.from);
-
-                // Get message from input, default to "Not specified" if empty
                 const message = actionData.approval_message || "Not specified";
                 
-                // Determine duration based on selection
                 let duration = "Once";
                 if (actionData.duration_type === "seconds" && actionData.duration_seconds) {
                     duration = actionData.duration_seconds.toString();
                 }
 
-                // Extract username from context
                 const username = context.activity.from.name || 'Unknown User';
-                console.log('Username captured:', username);
-
+                
                 const functionParams = new URLSearchParams({
                     decision: actionData.decision,
                     requestId: actionData.requestId,
                     ticketId: actionData.ticketNumber,
                     message: message,
                     duration: duration,
-                    username: username
+                    username: username,
+                    approvalUrl: actionData.approvalUrl,
+                    authKey: actionData.authKey
                 }).toString();
 
-                console.log('Function Parameters:', functionParams);
-                console.log('Function URL:', `${functionUrl}?${functionParams}`);
+                console.log('Calling function with params:', functionParams);
 
                 const response = await fetch(`${functionUrl}?${functionParams}`, {
                     method: 'POST',
@@ -103,8 +91,8 @@ class ApprovalBot extends TeamsActivityHandler {
                     }
                 });
 
-                const responseBody = await response.json();
-                console.log('Function Response:', JSON.stringify(responseBody, null, 2));
+                const responseData = await response.json();
+                console.log('Function Response:', responseData);
 
                 if (response.ok) {
                     return {
@@ -116,23 +104,10 @@ class ApprovalBot extends TeamsActivityHandler {
                         }
                     };
                 } else {
-                    console.error('Function call failed. Status:', response.status);
-                    console.error('Response body:', JSON.stringify(responseBody, null, 2));
-                    return {
-                        status: 500,
-                        body: {
-                            statusCode: 500,
-                            type: 'application/vnd.microsoft.activity.message',
-                            value: `Error processing request: ${JSON.stringify(responseBody)}`
-                        }
-                    };
+                    throw new Error(`Function call failed: ${JSON.stringify(responseData)}`);
                 }
             } catch (error) {
-                console.error('Detailed error:', {
-                    message: error.message,
-                    stack: error.stack,
-                    context: JSON.stringify(context.activity, null, 2)
-                });
+                console.error('Error processing action:', error);
                 return {
                     status: 500,
                     body: {
@@ -142,8 +117,6 @@ class ApprovalBot extends TeamsActivityHandler {
                     }
                 };
             }
-        } else {
-            console.log('Unknown invoke activity type:', context.activity.name);
         }
         return null;
     }
@@ -214,4 +187,4 @@ class ApprovalBot extends TeamsActivityHandler {
     }
 }
 
-module.exports = ApprovalBot;
+module.exports = BTApprovalBot;

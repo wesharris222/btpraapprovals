@@ -8,8 +8,9 @@
   },
   "dependencies": {
     "@azure/data-tables": "^13.3.0",
-    "botbuilder": "^4.23.2",
+    "botbuilder": "^4.19.3",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^2.6.9"
   }
 }

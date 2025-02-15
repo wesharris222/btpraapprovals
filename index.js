@@ -1,7 +1,7 @@
 const path = require('path');
 const express = require('express');
 const { BotFrameworkAdapter } = require('botbuilder');
-const ApprovalBot = require('./bot');
+const BTApprovalBot = require('./bot');
 
 // Create adapter
 const adapter = new BotFrameworkAdapter({
@@ -10,18 +10,17 @@ const adapter = new BotFrameworkAdapter({
 });
 
 // Create bot instance
-const bot = new ApprovalBot();
+const bot = new BTApprovalBot();
 
-// Enhanced error handler
+// Error handler
 adapter.onTurnError = async (context, error) => {
     console.error(`\n [onTurnError] unhandled error: ${error}`);
     console.error('Error details:', {
         message: error.message,
         stack: error.stack,
-        activity: context.activity,
-        error: error
+        activity: context.activity
     });
-    await context.sendActivity('Oops. Something went wrong!');
+    await context.sendActivity('The bot encountered an error or bug.');
 };
 
 // Create HTTP server
@@ -36,55 +35,22 @@ app.post('/api/messages', (req, res) => {
     });
 });
 
-// Enhanced webhook endpoint
+// Webhook endpoint for Logic App
 app.post('/api/webhook', async (req, res) => {
     try {
-        console.log('=== WEBHOOK REQUEST RECEIVED ===');
-        console.log('Request Body:', JSON.stringify(req.body, null, 2));
-        console.log('Request Headers:', JSON.stringify(req.headers, null, 2));
+        console.log('Webhook request received:', JSON.stringify(req.body, null, 2));
 
         const conversationReferences = await bot.getAllConversationReferences();
         if (!conversationReferences || conversationReferences.length === 0) {
-            console.error('No conversation references found');
             throw new Error('No conversation references found');
         }
-
-        console.log('Found conversation references:', conversationReferences.length);
-
-        // Process placeholders in the card
-        const processedCard = JSON.parse(JSON.stringify(req.body));
-        const placeholders = {
-            '%%User%%': req.body.user || 'Not specified',
-            '%%EventType%%': req.body.eventType || 'Not specified',
-            '%%RequestId%%': req.body.requestId || 'Not specified',
-            '%%Timestamp%%': req.body.timestamp || new Date().toISOString(),
-            '%%HostName%%': req.body.hostname || 'Not specified',
-            '%%TicketNumber%%': req.body.ticketNumber || 'Not specified',
-            '%%FilePathObjectId%%': req.body.filePathObjectId || 'Not specified',
-            '%%Reason%%': req.body.reason || 'Not specified',
-            '%%ApplicationGroup%%': req.body.applicationGroup || 'Not specified',
-            '%%NumericTicket%%': (req.body.ticketNumber || '').replace(/^[A-Za-z]+0*/, '')
-        };
-
-        console.log('Processing placeholders:', placeholders);
-
-        // Replace placeholders in the card JSON
-        const cardJson = JSON.stringify(processedCard);
-        const processedCardJson = Object.entries(placeholders).reduce(
-            (acc, [key, value]) => acc.replace(new RegExp(key, 'g'), value),
-            cardJson
-        );
-
-        console.log('Processed card JSON:', processedCardJson);
-
-        const finalCard = JSON.parse(processedCardJson);
 
         // Send message to all stored conversations
         for (const reference of conversationReferences) {
             try {
                 console.log('Sending to conversation:', reference.conversation.id);
                 await adapter.continueConversation(reference, async (context) => {
-                    await context.sendActivity({ attachments: finalCard.attachments });
+                    await context.sendActivity(req.body);
                 });
             } catch (err) {
                 console.error(`Error sending to conversation ${reference.conversation.id}:`, err);
@@ -93,11 +59,7 @@ app.post('/api/webhook', async (req, res) => {
 
         res.status(200).send('Notifications sent successfully');
     } catch (error) {
-        console.error('Detailed webhook error:', {
-            message: error.message,
-            stack: error.stack,
-            body: req.body
-        });
+        console.error('Webhook error:', error);
         res.status(500).send(error.message);
     }
 });
