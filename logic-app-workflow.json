@@ -2,23 +2,6 @@
     "definition": {
         "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowDefinition.json#",
         "actions": {
-            "When_a_new_email_arrives": {
-                "type": "ApiConnection",
-                "inputs": {
-                    "host": {
-                        "connection": {
-                            "name": "@parameters('$connections')['office365']['connectionId']"
-                        }
-                    },
-                    "method": "get",
-                    "path": "/Mail/OnNewEmail",
-                    "queries": {
-                        "folderPath": "Inbox",
-                        "subjectFilter": "Session Authorization Request",
-                        "includeAttachments": false
-                    }
-                }
-            },
             "Get_email_content": {
                 "type": "ApiConnection",
                 "inputs": {
@@ -30,9 +13,7 @@
                     "method": "get",
                     "path": "/v2/Mail/@{encodeURIComponent(triggerBody()?['id'])}/$value"
                 },
-                "runAfter": {
-                    "When_a_new_email_arrives": ["Succeeded"]
-                }
+                "runAfter": {}
             },
             "Parse_Email_Body": {
                 "type": "Compose",
@@ -186,18 +167,24 @@
             }
         },
         "parameters": {
-            "$connections": {
-                "defaultValue": {},
-                "type": "Object"
-            },
-            "TeamsWebhookUrl": {
-                "defaultValue": "",
-                "type": "String"
+    "$connections": {
+        "defaultValue": {
+            "office365": {
+                "id": "/subscriptions/43189cc5-f0a5-41e7-96a3-133d9406008a/providers/Microsoft.Web/locations/westus/managedApis/office365",
+                "connectionName": "praapprovals-office365",
+                "connectionId": "/subscriptions/43189cc5-f0a5-41e7-96a3-133d9406008a/resourceGroups/pra-approval-rg/providers/Microsoft.Web/connections/praapprovals-office365"
             }
         },
+        "type": "Object"
+    },
+    "TeamsWebhookUrl": {
+        "defaultValue": "",
+        "type": "String"
+    }
+},
         "triggers": {
             "When_a_new_email_arrives": {
-                "type": "ApiConnectionTrigger",
+                "type": "ApiConnection",
                 "inputs": {
                     "host": {
                         "connection": {
@@ -208,7 +195,8 @@
                     "path": "/Mail/OnNewEmail",
                     "queries": {
                         "folderPath": "Inbox",
-                        "subjectFilter": "Session Authorization Request"
+                        "searchQuery": "'A new session authorization request has been created'",
+                        "includeAttachments": false
                     }
                 },
                 "recurrence": {
