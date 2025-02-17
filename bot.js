@@ -52,7 +52,7 @@ class BTApprovalBot extends TeamsActivityHandler {
 
     async onInvokeActivity(context) {
         console.log('Invoke Activity:', context.activity);
-
+    
         if (context.activity.name === 'adaptiveCard/action') {
             const actionData = context.activity.value.action.data;
             console.log('Action Data:', actionData);
@@ -60,29 +60,19 @@ class BTApprovalBot extends TeamsActivityHandler {
             try {
                 const functionUrl = process.env.FUNCTIONAPP_URL;
                 const functionKey = process.env.FUNCTIONAPP_KEY;
-
-                const message = actionData.approval_message || "Not specified";
-                
-                let duration = "Once";
-                if (actionData.duration_type === "seconds" && actionData.duration_seconds) {
-                    duration = actionData.duration_seconds.toString();
-                }
-
+    
+                const message = actionData.approval_message || "default";
                 const username = context.activity.from.name || 'Unknown User';
                 
                 const functionParams = new URLSearchParams({
                     decision: actionData.decision,
-                    requestId: actionData.requestId,
-                    ticketId: actionData.ticketNumber,
                     message: message,
-                    duration: duration,
-                    username: username,
                     approvalUrl: actionData.approvalUrl,
                     authKey: actionData.authKey
                 }).toString();
-
+    
                 console.log('Calling function with params:', functionParams);
-
+    
                 const response = await fetch(`${functionUrl}?${functionParams}`, {
                     method: 'POST',
                     headers: {
@@ -90,10 +80,10 @@ class BTApprovalBot extends TeamsActivityHandler {
                         'x-functions-key': functionKey
                     }
                 });
-
+    
                 const responseData = await response.json();
                 console.log('Function Response:', responseData);
-
+    
                 if (response.ok) {
                     return {
                         status: 200,

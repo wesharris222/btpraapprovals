@@ -110,33 +110,6 @@
                                         "id": "approval_message",
                                         "placeholder": "Add a message (optional)",
                                         "isMultiline": true
-                                    },
-                                    {
-                                        "type": "TextBlock",
-                                        "text": "Duration",
-                                        "wrap": true
-                                    },
-                                    {
-                                        "type": "Input.ChoiceSet",
-                                        "id": "duration_type",
-                                        "style": "expanded",
-                                        "value": "once",
-                                        "choices": [
-                                            {
-                                                "title": "One time",
-                                                "value": "once"
-                                            },
-                                            {
-                                                "title": "Custom duration (seconds)",
-                                                "value": "seconds"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "type": "Input.Number",
-                                        "id": "duration_seconds",
-                                        "placeholder": "Duration in seconds",
-                                        "isVisible": false
                                     }
                                 ],
                                 "actions": [
