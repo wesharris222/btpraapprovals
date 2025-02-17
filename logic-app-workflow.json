@@ -18,8 +18,8 @@
             "Extract_URL_and_AuthKey": {
                 "type": "Compose",
                 "inputs": {
-                    "hrefStart": "@indexOf(body('Get_email_content')?['body'], 'href=\"')",
-                    "hrefUrl": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6), sub(indexOf(body('Get_email_content')?['body'], '\">respond'), add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6)))}",
+                    "fullUrl": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6), sub(indexOf(body('Get_email_content')?['body'], '\">respond'), add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6)))}",
+                    "modifiedUrl": "@{replace(substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6), sub(indexOf(body('Get_email_content')?['body'], '\">respond'), add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6))), '/login/jump_approval', '/approve_jump_request')}",
                     "authKey": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'authKey='), 8), 32)}"
                 },
                 "runAfter": {
@@ -91,7 +91,7 @@
                                         "data": {
                                             "decision": "approved",
                                             "requestId": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Request #</strong></td><td>'), 27), 2)}",
-                                            "approvalUrl": "@{replace(outputs('Extract_URL_and_AuthKey')?['hrefUrl'], '/login/jump_approval', '/approve_jump_request')}",
+                                            "approvalUrl": "@{outputs('Extract_URL_and_AuthKey')?['modifiedUrl']}",
                                             "authKey": "@{outputs('Extract_URL_and_AuthKey')?['authKey']}"
                                         }
                                     },
@@ -102,7 +102,7 @@
                                         "data": {
                                             "decision": "denied",
                                             "requestId": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Request #</strong></td><td>'), 27), 2)}",
-                                            "approvalUrl": "@{replace(outputs('Extract_URL_and_AuthKey')?['hrefUrl'], '/login/jump_approval', '/approve_jump_request')}",
+                                            "approvalUrl": "@{outputs('Extract_URL_and_AuthKey')?['modifiedUrl']}",
                                             "authKey": "@{outputs('Extract_URL_and_AuthKey')?['authKey']}"
                                         }
                                     }
