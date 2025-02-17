@@ -7,14 +7,24 @@ module.exports = async function (context, req) {
 
         const decision = req.query.decision;
         const message = req.query.message || 'default';
-        const approvalUrl = req.query.approvalUrl;
+        let approvalUrl = req.query.approvalUrl;
         const authKey = req.query.authKey;
 
         if (!approvalUrl || !authKey) {
             throw new Error('Missing required parameters: approvalUrl or authKey');
         }
 
-        // Create the proper URL with authKey and email parameters
+        // Ensure proper URL construction
+        if (!approvalUrl.startsWith('http')) {
+            approvalUrl = `https://${approvalUrl}`;
+        }
+        
+        // Add /approve_jump_request if not present
+        if (!approvalUrl.endsWith('/approve_jump_request')) {
+            approvalUrl = `${approvalUrl}/approve_jump_request`;
+        }
+
+        // Create the proper URL with authKey parameter
         const fullUrl = `${approvalUrl}?authKey=${authKey}`;
 
         // Create form data for the request

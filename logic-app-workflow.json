@@ -90,7 +90,7 @@
                                         "data": {
                                             "decision": "approved",
                                             "requestId": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Request #</strong></td><td>'), 27), 2)}",
-                                            "approvalUrl": "https://@{outputs('Extract_URL_and_AuthKey')?['baseUrl']}/approve_jump_request",
+                                            "approvalUrl": "@{replace(outputs('Extract_URL_and_AuthKey')?['baseUrl'], 'https://', '')}",
                                             "authKey": "@{outputs('Extract_URL_and_AuthKey')?['authKey']}"
                                         }
                                     },
