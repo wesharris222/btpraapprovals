@@ -11,7 +11,7 @@
                         }
                     },
                     "method": "get",
-                    "path": "/v2/Mail/@{encodeURIComponent(triggerBody()?['id'])}/$value"
+                    "path": "/v2/Mail/@{encodeURIComponent(triggerOutputs()?['body']?['id'])}/$value"
                 },
                 "runAfter": {}
             },
