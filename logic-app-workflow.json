@@ -11,40 +11,135 @@
                         }
                     },
                     "method": "get",
-                    "path": "/v2/Mail/@{first(outputs('When_a_new_email_arrives')?['body']?['value'])?['Id']}/$value"
+                    "path": "/v2/Mail/@{first(triggerBody()?['value'])?['Id']}"
                 },
-                "runAfter": {
-                    "When_a_new_email_arrives": ["Succeeded"]
-                }
-            },
-            "Parse_Email_Body": {
-                "type": "Compose",
-                "inputs": "@replace(replace(replace(body('Get_email_content'), '\r\n', ' '), '\\n', ' '), '  ', ' ')",
-                "runAfter": {
-                    "Get_email_content": ["Succeeded"]
-                }
+                "runAfter": {}
             },
             "Extract_URL_and_AuthKey": {
                 "type": "Compose",
                 "inputs": {
-                    "fullUrl": "@{replace(first(split(first(split(outputs('Parse_Email_Body'), 'https://wharrispra'))[1], ' ')), '__;!!', '')}",
-                    "authKey": "@{first(split(last(split(first(split(outputs('Parse_Email_Body'), 'authKey='))[1], '&')), '_'))}"
+                    "fullUrl": "@{substring(body('Get_email_content')?['body'], indexOf(body('Get_email_content')?['body'], 'href=\"') + 6, indexOf(substring(body('Get_email_content')?['body'], indexOf(body('Get_email_content')?['body'], 'href=\"') + 6), '\"'))}",
+                    "authKey": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'authKey='), 8), 32)}"
                 },
                 "runAfter": {
-                    "Parse_Email_Body": ["Succeeded"]
+                    "Get_email_content": ["Succeeded"]
                 }
             },
-            "Extract_Request_Details": {
-                "type": "Compose",
+            "Send_to_Teams_Bot": {
+                "type": "Http",
                 "inputs": {
-                    "requestId": "@{trim(first(split(first(split(first(split(outputs('Parse_Email_Body'), '**Request #**'))[1], '**Request State**'))[0])))}",
-                    "requestedSystem": "@{trim(first(split(first(split(first(split(outputs('Parse_Email_Body'), '**Requested System**'))[1], '**System Comments**'))[0])))}",
-                    "systemGroup": "@{trim(first(split(first(split(first(split(outputs('Parse_Email_Body'), '**System Group**'))[1], '**Requested Time**'))[0])))}",
-                    "requestedTime": "@{trim(first(split(first(split(first(split(outputs('Parse_Email_Body'), '**Requested Time**'))[1], '**Requested Reason**'))[0])))}",
-                    "requestedReason": "@{trim(first(split(first(split(first(split(outputs('Parse_Email_Body'), '**Requested Reason**'))[1], '**Requested By**'))[0])))}",
-                    "requestedBy": "@{trim(first(split(first(split(outputs('Parse_Email_Body'), '**Requested By**'))[1], '\n'))[0])}",
-                    "approvalUrl": "https://wharrispra@{outputs('Extract_URL_and_AuthKey')?['fullUrl']}",
-                    "authKey": "@{outputs('Extract_URL_and_AuthKey')?['authKey']}"
+                    "method": "POST",
+                    "uri": "https://@{parameters('BotName')}.azurewebsites.net/api/webhook",
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "body": {
+                        "type": "message",
+                        "attachments": [{
+                            "contentType": "application/vnd.microsoft.card.adaptive",
+                            "content": {
+                                "type": "AdaptiveCard",
+                                "body": [
+                                    {
+                                        "type": "TextBlock",
+                                        "text": "PRA Access Request",
+                                        "weight": "bolder",
+                                        "size": "large"
+                                    },
+                                    {
+                                        "type": "FactSet",
+                                        "facts": [
+                                            {
+                                                "title": "Request ID:",
+                                                "value": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Request #</strong></td><td>'), 27), 2)}"
+                                            },
+                                            {
+                                                "title": "System:",
+                                                "value": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Requested System</strong></div></td><td>'), 39), 5)}"
+                                            },
+                                            {
+                                                "title": "System Group:",
+                                                "value": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'System Group</strong></td><td>'), 29), 28)}"
+                                            },
+                                            {
+                                                "title": "Requested Time:",
+                                                "value": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Requested Time</strong></td><td>'), 31), 35)}"
+                                            },
+                                            {
+                                                "title": "Requested Reason:",
+                                                "value": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Requested Reason</strong></td><td>'), 33), 15)}"
+                                            },
+                                            {
+                                                "title": "Requested By:",
+                                                "value": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Requested By</strong></td><td>'), 30), 16)}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "Input.Text",
+                                        "id": "approval_message",
+                                        "placeholder": "Add a message (optional)",
+                                        "isMultiline": true
+                                    },
+                                    {
+                                        "type": "TextBlock",
+                                        "text": "Duration",
+                                        "wrap": true
+                                    },
+                                    {
+                                        "type": "Input.ChoiceSet",
+                                        "id": "duration_type",
+                                        "style": "expanded",
+                                        "value": "once",
+                                        "choices": [
+                                            {
+                                                "title": "One time",
+                                                "value": "once"
+                                            },
+                                            {
+                                                "title": "Custom duration (seconds)",
+                                                "value": "seconds"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "Input.Number",
+                                        "id": "duration_seconds",
+                                        "placeholder": "Duration in seconds",
+                                        "isVisible": false
+                                    }
+                                ],
+                                "actions": [
+                                    {
+                                        "type": "Action.Execute",
+                                        "title": "Approve",
+                                        "verb": "approve",
+                                        "data": {
+                                            "decision": "approved",
+                                            "requestId": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Request #</strong></td><td>'), 27), 2)}",
+                                            "ticketNumber": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Request #</strong></td><td>'), 27), 2)}",
+                                            "approvalUrl": "@{outputs('Extract_URL_and_AuthKey')?['fullUrl']}",
+                                            "authKey": "@{outputs('Extract_URL_and_AuthKey')?['authKey']}"
+                                        }
+                                    },
+                                    {
+                                        "type": "Action.Execute",
+                                        "title": "Deny",
+                                        "verb": "deny",
+                                        "data": {
+                                            "decision": "denied",
+                                            "requestId": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Request #</strong></td><td>'), 27), 2)}",
+                                            "ticketNumber": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Request #</strong></td><td>'), 27), 2)}",
+                                            "approvalUrl": "@{outputs('Extract_URL_and_AuthKey')?['fullUrl']}",
+                                            "authKey": "@{outputs('Extract_URL_and_AuthKey')?['authKey']}"
+                                        }
+                                    }
+                                ],
+                                "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                                "version": "1.4"
+                            }
+                        }]
+                    }
                 },
                 "runAfter": {
                     "Extract_URL_and_AuthKey": ["Succeeded"]
@@ -55,12 +150,16 @@
             "$connections": {
                 "defaultValue": {
                     "office365": {
-                        "connectionId": "/subscriptions/43189cc5-f0a5-41e7-96a3-133d9406008a/resourceGroups/pra-approval-rg/providers/Microsoft.Web/connections/pra-approvin-office365",
-                        "connectionName": "pra-approvin-office365",
-                        "id": "/subscriptions/43189cc5-f0a5-41e7-96a3-133d9406008a/providers/Microsoft.Web/locations/westus/managedApis/office365"
+                        "connectionId": "",
+                        "connectionName": "",
+                        "id": ""
                     }
                 },
                 "type": "Object"
+            },
+            "BotName": {
+                "type": "String",
+                "defaultValue": ""
             }
         },
         "triggers": {
