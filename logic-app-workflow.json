@@ -15,14 +15,44 @@
                 },
                 "runAfter": {}
             },
-            "Extract_URL_and_AuthKey": {
-                "type": "Compose",
+            "Initialize_url_index": {
+                "type": "InitializeVariable",
                 "inputs": {
-                    "fullUrl": "@{substring(body('Get_email_content')?['body'], indexOf(body('Get_email_content')?['body'], 'href=\"') + 6, indexOf(substring(body('Get_email_content')?['body'], indexOf(body('Get_email_content')?['body'], 'href=\"') + 6), '\"'))}",
-                    "authKey": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'authKey='), 8), 32)}"
+                    "variables": [
+                        {
+                            "name": "urlIndex",
+                            "type": "integer",
+                            "value": "@add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6)"
+                        }
+                    ]
                 },
                 "runAfter": {
                     "Get_email_content": ["Succeeded"]
+                }
+            },
+            "Initialize_authkey_index": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "authKeyIndex",
+                            "type": "integer",
+                            "value": "@add(indexOf(body('Get_email_content')?['body'], 'authKey='), 8)"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_url_index": ["Succeeded"]
+                }
+            },
+            "Extract_URL_and_AuthKey": {
+                "type": "Compose",
+                "inputs": {
+                    "fullUrl": "@{substring(body('Get_email_content')?['body'], variables('urlIndex'), sub(indexOf(body('Get_email_content')?['body'], '\">'), variables('urlIndex')))}",
+                    "authKey": "@{substring(body('Get_email_content')?['body'], variables('authKeyIndex'), 32)}"
+                },
+                "runAfter": {
+                    "Initialize_authkey_index": ["Succeeded"]
                 }
             },
             "Send_to_Teams_Bot": {
@@ -150,9 +180,9 @@
             "$connections": {
                 "defaultValue": {
                     "office365": {
-                        "connectionId": "",
-                        "connectionName": "",
-                        "id": ""
+                        "connectionId": "/subscriptions/43189cc5-f0a5-41e7-96a3-133d9406008a/resourceGroups/{resourceGroup}/providers/Microsoft.Web/connections/office365",
+                        "connectionName": "office365",
+                        "id": "/subscriptions/43189cc5-f0a5-41e7-96a3-133d9406008a/providers/Microsoft.Web/locations/westus/managedApis/office365"
                     }
                 },
                 "type": "Object"
