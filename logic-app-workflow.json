@@ -3,18 +3,18 @@
         "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowDefinition.json#",
         "actions": {
             "Get_email_content": {
-                "type": "ApiConnection",
-                "inputs": {
-                    "host": {
-                        "connection": {
-                            "name": "@parameters('$connections')['office365']['connectionId']"
-                        }
-                    },
-                    "method": "get",
-                    "path": "/v2/Mail/@{encodeURIComponent(triggerOutputs()?['body']?['id'])}/$value"
-                },
-                "runAfter": {}
+        "type": "ApiConnection",
+        "inputs": {
+            "host": {
+                "connection": {
+                    "name": "@parameters('$connections')['office365']['connectionId']"
+                }
             },
+            "method": "get",
+            "path": "/v2/Mail/@{triggerBody()?['id']}/$value"
+        },
+        "runAfter": {}
+    },
             "Parse_Email_Body": {
                 "type": "Compose",
                 "inputs": "@replace(replace(replace(body('Get_email_content'), '\r\n', ' '), '\\n', ' '), '  ', ' ')",
