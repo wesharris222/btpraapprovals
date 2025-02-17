@@ -18,8 +18,7 @@
             "Extract_URL_and_AuthKey": {
                 "type": "Compose",
                 "inputs": {
-                    "fullText": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6), sub(indexOf(body('Get_email_content')?['body'], '\">'), add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6)))}",
-                    "baseUrl": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'href=\"https://wharrispra'), 11), sub(indexOf(body('Get_email_content')?['body'], '/login'), add(indexOf(body('Get_email_content')?['body'], 'href=\"https://wharrispra'), 11)))}",
+                    "baseUrl": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'https://wharrispra'), 0), 50)}",
                     "authKey": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'authKey='), 8), 32)}"
                 },
                 "runAfter": {
