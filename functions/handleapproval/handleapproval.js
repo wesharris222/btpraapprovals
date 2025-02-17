@@ -14,6 +14,9 @@ module.exports = async function (context, req) {
             throw new Error('Missing required parameters: approvalUrl or authKey');
         }
 
+        // Create the proper URL with authKey and email parameters
+        const fullUrl = `${approvalUrl}?authKey=${authKey}`;
+
         // Create form data for the request
         const formData = new URLSearchParams();
         formData.append('authKey', authKey);
@@ -26,8 +29,11 @@ module.exports = async function (context, req) {
             formData.append('denied', 'Deny');
         }
 
+        context.log('Sending request to:', fullUrl);
+        context.log('Form data:', formData.toString());
+
         // Send the approval/denial request
-        const response = await fetch(approvalUrl, {
+        const response = await fetch(fullUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -36,7 +42,8 @@ module.exports = async function (context, req) {
         });
 
         if (!response.ok) {
-            throw new Error(`Approval request failed with status: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Approval request failed with status: ${response.status}. Response: ${errorText}`);
         }
 
         const responseText = await response.text();

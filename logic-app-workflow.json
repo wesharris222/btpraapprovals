@@ -48,11 +48,12 @@
             "Extract_URL_and_AuthKey": {
                 "type": "Compose",
                 "inputs": {
-                    "fullUrl": "@{substring(body('Get_email_content')?['body'], variables('urlIndex'), sub(indexOf(body('Get_email_content')?['body'], '\">'), variables('urlIndex')))}",
-                    "authKey": "@{substring(body('Get_email_content')?['body'], variables('authKeyIndex'), 32)}"
+                    "fullText": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6), sub(indexOf(body('Get_email_content')?['body'], '\">'), add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6)))}",
+                    "baseUrl": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'href=\"https://wharrispra'), 11), sub(indexOf(body('Get_email_content')?['body'], '/login'), add(indexOf(body('Get_email_content')?['body'], 'href=\"https://wharrispra'), 11)))}",
+                    "authKey": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'authKey='), 8), 32)}"
                 },
                 "runAfter": {
-                    "Initialize_authkey_index": ["Succeeded"]
+                    "Get_email_content": ["Succeeded"]
                 }
             },
             "Send_to_Teams_Bot": {
@@ -121,7 +122,7 @@
                                             "decision": "approved",
                                             "requestId": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Request #</strong></td><td>'), 27), 2)}",
                                             "ticketNumber": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Request #</strong></td><td>'), 27), 2)}",
-                                            "approvalUrl": "@{outputs('Extract_URL_and_AuthKey')?['fullUrl']}",
+                                            "approvalUrl": "https://@{outputs('Extract_URL_and_AuthKey')?['baseUrl']}/approve_jump_request",
                                             "authKey": "@{outputs('Extract_URL_and_AuthKey')?['authKey']}"
                                         }
                                     },
