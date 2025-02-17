@@ -3,18 +3,20 @@
         "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowDefinition.json#",
         "actions": {
             "Get_email_content": {
-        "type": "ApiConnection",
-        "inputs": {
-            "host": {
-                "connection": {
-                    "name": "@parameters('$connections')['office365']['connectionId']"
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['office365']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/v2/Mail/@{first(outputs('When_a_new_email_arrives')?['body']?['value'])?['Id']}/$value"
+                },
+                "runAfter": {
+                    "When_a_new_email_arrives": ["Succeeded"]
                 }
             },
-            "method": "get",
-            "path": "/v2/Mail/@{triggerBody()?['id']}/$value"
-        },
-        "runAfter": {}
-    },
             "Parse_Email_Body": {
                 "type": "Compose",
                 "inputs": "@replace(replace(replace(body('Get_email_content'), '\r\n', ' '), '\\n', ' '), '  ', ' ')",
@@ -47,141 +49,20 @@
                 "runAfter": {
                     "Extract_URL_and_AuthKey": ["Succeeded"]
                 }
-            },
-            "Send_to_Teams_Bot": {
-                "type": "Http",
-                "inputs": {
-                    "method": "POST",
-                    "uri": "@{parameters('TeamsWebhookUrl')}",
-                    "body": {
-                        "type": "message",
-                        "attachments": [{
-                            "contentType": "application/vnd.microsoft.card.adaptive",
-                            "content": {
-                                "type": "AdaptiveCard",
-                                "body": [
-                                    {
-                                        "type": "TextBlock",
-                                        "text": "PRA Access Request",
-                                        "weight": "bolder",
-                                        "size": "large"
-                                    },
-                                    {
-                                        "type": "FactSet",
-                                        "facts": [
-                                            {
-                                                "title": "Request ID:",
-                                                "value": "@{outputs('Extract_Request_Details')?['requestId']}"
-                                            },
-                                            {
-                                                "title": "System:",
-                                                "value": "@{outputs('Extract_Request_Details')?['requestedSystem']}"
-                                            },
-                                            {
-                                                "title": "Group:",
-                                                "value": "@{outputs('Extract_Request_Details')?['systemGroup']}"
-                                            },
-                                            {
-                                                "title": "Time:",
-                                                "value": "@{outputs('Extract_Request_Details')?['requestedTime']}"
-                                            },
-                                            {
-                                                "title": "Reason:",
-                                                "value": "@{outputs('Extract_Request_Details')?['requestedReason']}"
-                                            },
-                                            {
-                                                "title": "Requested By:",
-                                                "value": "@{outputs('Extract_Request_Details')?['requestedBy']}"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "type": "Input.Text",
-                                        "id": "approval_message",
-                                        "placeholder": "Add a message (optional)",
-                                        "isMultiline": true
-                                    },
-                                    {
-                                        "type": "TextBlock",
-                                        "text": "Duration",
-                                        "wrap": true
-                                    },
-                                    {
-                                        "type": "Input.ChoiceSet",
-                                        "id": "duration_type",
-                                        "style": "expanded",
-                                        "value": "once",
-                                        "choices": [
-                                            {
-                                                "title": "One time",
-                                                "value": "once"
-                                            },
-                                            {
-                                                "title": "Custom duration (seconds)",
-                                                "value": "seconds"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "type": "Input.Number",
-                                        "id": "duration_seconds",
-                                        "placeholder": "Duration in seconds",
-                                        "isVisible": false
-                                    }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "Action.Execute",
-                                        "title": "Approve",
-                                        "verb": "approve",
-                                        "data": {
-                                            "decision": "approved",
-                                            "requestId": "@{outputs('Extract_Request_Details')?['requestId']}",
-                                            "ticketNumber": "@{outputs('Extract_Request_Details')?['requestId']}",
-                                            "approvalUrl": "@{outputs('Extract_Request_Details')?['approvalUrl']}",
-                                            "authKey": "@{outputs('Extract_Request_Details')?['authKey']}"
-                                        }
-                                    },
-                                    {
-                                        "type": "Action.Execute",
-                                        "title": "Deny",
-                                        "verb": "deny",
-                                        "data": {
-                                            "decision": "denied",
-                                            "requestId": "@{outputs('Extract_Request_Details')?['requestId']}",
-                                            "ticketNumber": "@{outputs('Extract_Request_Details')?['requestId']}",
-                                            "approvalUrl": "@{outputs('Extract_Request_Details')?['approvalUrl']}",
-                                            "authKey": "@{outputs('Extract_Request_Details')?['authKey']}"
-                                        }
-                                    }
-                                ],
-                                "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-                                "version": "1.4"
-                            }
-                        }]
-                    }
-                },
-                "runAfter": {
-                    "Extract_Request_Details": ["Succeeded"]
-                }
             }
         },
         "parameters": {
-    "$connections": {
-        "defaultValue": {
-            "office365": {
-                "id": "/subscriptions/43189cc5-f0a5-41e7-96a3-133d9406008a/providers/Microsoft.Web/locations/westus/managedApis/office365",
-                "connectionName": "praapprovals-office365",
-                "connectionId": "/subscriptions/43189cc5-f0a5-41e7-96a3-133d9406008a/resourceGroups/pra-approval-rg/providers/Microsoft.Web/connections/praapprovals-office365"
+            "$connections": {
+                "defaultValue": {
+                    "office365": {
+                        "connectionId": "/subscriptions/43189cc5-f0a5-41e7-96a3-133d9406008a/resourceGroups/pra-approval-rg/providers/Microsoft.Web/connections/pra-approvin-office365",
+                        "connectionName": "pra-approvin-office365",
+                        "id": "/subscriptions/43189cc5-f0a5-41e7-96a3-133d9406008a/providers/Microsoft.Web/locations/westus/managedApis/office365"
+                    }
+                },
+                "type": "Object"
             }
         },
-        "type": "Object"
-    },
-    "TeamsWebhookUrl": {
-        "defaultValue": "",
-        "type": "String"
-    }
-},
         "triggers": {
             "When_a_new_email_arrives": {
                 "type": "ApiConnection",
