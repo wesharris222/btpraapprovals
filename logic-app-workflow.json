@@ -15,15 +15,45 @@
                 },
                 "runAfter": {}
             },
-            "Extract_URL_and_AuthKey": {
-                "type": "Compose",
+            "Initialize_URL_Start": {
+                "type": "InitializeVariable",
                 "inputs": {
-                    "rawUrl": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6), sub(indexOf(body('Get_email_content')?['body'], '\">respond'), add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6)))}",
-                    "targetUrl": "@{replace(substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6), sub(indexOf(body('Get_email_content')?['body'], '\">respond'), add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6))), '&amp;', '&')}",
-                    "authKey": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'authKey='), 8), 32)}"
+                    "variables": [
+                        {
+                            "name": "urlStart",
+                            "type": "integer",
+                            "value": "@add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6)"
+                        }
+                    ]
                 },
                 "runAfter": {
                     "Get_email_content": ["Succeeded"]
+                }
+            },
+            "Initialize_URL_End": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "urlEnd",
+                            "type": "integer",
+                            "value": "@indexOf(body('Get_email_content')?['body'], '\">respond')"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_URL_Start": ["Succeeded"]
+                }
+            },
+            "Extract_URL_and_AuthKey": {
+                "type": "Compose",
+                "inputs": {
+                    "rawUrl": "@substring(body('Get_email_content')?['body'], variables('urlStart'), sub(variables('urlEnd'), variables('urlStart')))",
+                    "targetUrl": "@replace(substring(body('Get_email_content')?['body'], variables('urlStart'), sub(variables('urlEnd'), variables('urlStart'))), '&amp;', '&')",
+                    "authKey": "@substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'authKey='), 8), 32)"
+                },
+                "runAfter": {
+                    "Initialize_URL_End": ["Succeeded"]
                 }
             },
             "Send_to_Teams_Bot": {
