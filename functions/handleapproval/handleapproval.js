@@ -7,25 +7,12 @@ module.exports = async function (context, req) {
 
         const decision = req.query.decision;
         const message = req.query.message || 'default';
-        let approvalUrl = req.query.approvalUrl;
+        const approvalUrl = req.query.approvalUrl;
         const authKey = req.query.authKey;
 
         if (!approvalUrl || !authKey) {
             throw new Error('Missing required parameters: approvalUrl or authKey');
         }
-
-        // Ensure proper URL construction
-        if (!approvalUrl.startsWith('http')) {
-            approvalUrl = `https://${approvalUrl}`;
-        }
-        
-        // Add /approve_jump_request if not present
-        if (!approvalUrl.endsWith('/approve_jump_request')) {
-            approvalUrl = `${approvalUrl}/approve_jump_request`;
-        }
-
-        // Create the proper URL with authKey parameter
-        const fullUrl = `${approvalUrl}?authKey=${authKey}`;
 
         // Create form data for the request
         const formData = new URLSearchParams();
@@ -39,11 +26,11 @@ module.exports = async function (context, req) {
             formData.append('denied', 'Deny');
         }
 
-        context.log('Sending request to:', fullUrl);
+        context.log('Sending request to:', approvalUrl);
         context.log('Form data:', formData.toString());
 
         // Send the approval/denial request
-        const response = await fetch(fullUrl, {
+        const response = await fetch(approvalUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -51,13 +38,12 @@ module.exports = async function (context, req) {
             body: formData.toString()
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Approval request failed with status: ${response.status}. Response: ${errorText}`);
-        }
-
         const responseText = await response.text();
         context.log('Approval response:', responseText);
+
+        if (!response.ok) {
+            throw new Error(`Approval request failed with status: ${response.status}. Response: ${responseText}`);
+        }
 
         context.res = {
             status: 200,
