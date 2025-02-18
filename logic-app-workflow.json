@@ -18,8 +18,7 @@
             "Extract_URL_and_AuthKey": {
                 "type": "Compose",
                 "inputs": {
-                    "rawUrl": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'https://urldefense.com'), 0), sub(indexOf(body('Get_email_content')?['body'], '__;!!'), add(indexOf(body('Get_email_content')?['body'], 'https://urldefense.com'), 0)))}",
-                    "cleanUrl": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'https://wharrispra'), 0), sub(indexOf(body('Get_email_content')?['body'], '__;!!'), add(indexOf(body('Get_email_content')?['body'], 'https://wharrispra'), 0)))}",
+                    "targetUrl": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6), sub(indexOf(body('Get_email_content')?['body'], '\">respond'), add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6)))}",
                     "authKey": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'authKey='), 8), 32)}"
                 },
                 "runAfter": {
@@ -91,7 +90,7 @@
                                         "data": {
                                             "decision": "approved",
                                             "requestId": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'Request #</strong></td><td>'), 27), 2)}",
-                                            "approvalUrl": "@{outputs('Extract_URL_and_AuthKey')?['cleanUrl']}",
+                                            "approvalUrl": "@{outputs('Extract_URL_and_AuthKey')?['targetUrl']}",
                                             "authKey": "@{outputs('Extract_URL_and_AuthKey')?['authKey']}"
                                         }
                                     },
