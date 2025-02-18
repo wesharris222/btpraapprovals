@@ -18,7 +18,8 @@
             "Extract_URL_and_AuthKey": {
                 "type": "Compose",
                 "inputs": {
-                    "targetUrl": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6), sub(indexOf(body('Get_email_content')?['body'], '\">respond'), add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6)))}",
+                    "rawUrl": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6), sub(indexOf(body('Get_email_content')?['body'], '\">respond'), add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6)))}",
+                    "targetUrl": "@{replace(substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6), sub(indexOf(body('Get_email_content')?['body'], '\">respond'), add(indexOf(body('Get_email_content')?['body'], 'href=\"'), 6))), '&amp;', '&')}",
                     "authKey": "@{substring(body('Get_email_content')?['body'], add(indexOf(body('Get_email_content')?['body'], 'authKey='), 8), 32)}"
                 },
                 "runAfter": {
